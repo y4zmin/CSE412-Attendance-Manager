@@ -29,7 +29,7 @@ def signup():
 
     cur.execute("""
         INSERT INTO users (username, firstname, lastname, password, usertype)
-        VALUES (%s, %s, %s, %s, %s)
+        VALUES (%s, %s, %s, %s, %s) RETURNING userid
     """, (username, firstname, lastname, password, usertype)) 
 
     userid = cur.fetchone()[0]
