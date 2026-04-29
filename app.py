@@ -1,13 +1,14 @@
 import os
 from flask import Flask, render_template, request, redirect
 import psycopg2
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 
-db_url = "postgresql://postgres.mrwaacfrwwyfsjyzwgld:NMxZ2Ov8kz0M78hg@aws-1-us-east-2.pooler.supabase.com:6543/postgres"
-
 def get_db_connection():
-        return psycopg2.connect(db_url)
+        return psycopg2.connect(os.getenv("DB_URL"))
 
 
 @app.route("/")
