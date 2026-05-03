@@ -1,18 +1,119 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Attendance Manager</title>
+    <title>Teacher Dashboard</title>
 </head>
 <body>
-    <h1>Attendance Manager</h1>
+    <h1>Welcome, {{ name }}!</h1>
+    <p>Teacher Dashboard</p>
 
-    <h2>Welcome to Your Instructor Dashboard, {{name}}</h2>
+    <hr>
 
+    <h2>My Classes</h2>
+    {% if my_classes %}
+        <form action="/teacher/{{ userid }}" method="GET">
+            <label for="classid">Select a class to view roster and attendance:</label>
+            <select name="classid" id="classid" required>
+                <option value="">-- Select a class --</option>
+                {% for c in my_classes %}
+                    <option value="{{ c[0] }}" {% if selected_classid == c[0] %}selected{% endif %}>
+                        {{ c[1] }} - {{ c[2] }}
+                    </option>
+                {% endfor %}
+            </select>
+            <button type="submit">View</button>
+        </form>
+    {% else %}
+        <p>You have not created any classes yet.</p>
+    {% endif %}
 
+    {% if selected_classid %}
+        <hr>
+        <h2>Roster for {{ selected_classname }}</h2>
+        {% if roster %}
+            <table border="1" cellpadding="6">
+                <tr>
+                    <th>Username</th>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                    <th>Action</th>
+                </tr>
+                {% for s in roster %}
+                    <tr>
+                        <td>{{ s[3] }}</td>
+                        <td>{{ s[1] }}</td>
+                        <td>{{ s[2] }}</td>
+                        <td>
+                            <form action="/teacher/{{ userid }}/remove_student" method="POST" style="display:inline;">
+                                <input type="hidden" name="classid" value="{{ selected_classid }}">
+                                <input type="hidden" name="student_userid" value="{{ s[0] }}">
+                                <button type="submit" onclick="return confirm('Remove {{ s[1] }} {{ s[2] }} from this class?');">Remove</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </table>
+        {% else %}
+            <p>No students are enrolled in this class.</p>
+        {% endif %}
 
+        <hr>
+        <h2>Attendance Records for {{ selected_classname }}</h2>
+        {% if attendance_records %}
+            <table border="1" cellpadding="6">
+                <tr>
+                    <th>Date</th>
+                    <th>Student</th>
+                    <th>Status</th>
+                </tr>
+                {% for r in attendance_records %}
+                    <tr>
+                        <td>{{ r[3] }}</td>
+                        <td>{{ r[1] }} {{ r[2] }}</td>
+                        <td>{{ r[4] }}</td>
+                    </tr>
+                {% endfor %}
+            </table>
+        {% else %}
+            <p>No attendance records yet for this class.</p>
+        {% endif %}
 
-<a href="/">
-    <button type="button">Log Out</button>
-</a>
+        <hr>
+        <h2>Update Attendance</h2>
+        {% if roster %}
+            <form action="/teacher/{{ userid }}/update_attendance" method="POST">
+                <input type="hidden" name="classid" value="{{ selected_classid }}">
+
+                <label for="student_userid">Student:</label>
+                <select name="student_userid" id="student_userid" required>
+                    {% for s in roster %}
+                        <option value="{{ s[0] }}">{{ s[1] }} {{ s[2] }} ({{ s[3] }})</option>
+                    {% endfor %}
+                </select>
+                <br><br>
+
+                <label for="meetdate">Date:</label>
+                <input type="date" name="meetdate" id="meetdate" required>
+                <br><br>
+
+                <label for="new_status">Status:</label>
+                <select name="new_status" id="new_status" required>
+                    <option value="present">Present</option>
+                    <option value="absent">Absent</option>
+                    <option value="late">Late</option>
+                    <option value="excused">Excused</option>
+                </select>
+                <br><br>
+
+                <button type="submit">Update Attendance</button>
+            </form>
+            <p><i>Note: If a record exists for that student/date it will be updated. If not, a new record is created.</i></p>
+        {% else %}
+            <p>Add students to the class before updating attendance.</p>
+        {% endif %}
+    {% endif %}
+
+    <hr>
+    <p><a href="/">Logout</a></p>
 </body>
 </html>
