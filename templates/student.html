@@ -1,18 +1,118 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
+  <head>
     <title>Attendance Manager</title>
-</head>
-<body>
+  </head>
+  <body>
+    <h1>Attendance Manager</h1>
 
-<h1>Attendance Manager</h1>
+    <h2>Welcome to Your Student Dashboard, {{ name }}</h2>
 
-<h2>Welcome to Your Student Dashboard, {{name}}</h2>
+    <h2>Join a Class</h2>
 
+    {% if available_classes %}
+    <form action="/student/{{ userid }}/join" method="POST">
+      <select name="classid" required>
+        {% for class in available_classes %}
+        <option value="{{ class[0] }}">{{ class[1] }} - {{ class[2] }}</option>
+        {% endfor %}
+      </select>
 
-<a href="/">
-    <button type="button">Log Out</button>
-</a>
+      <button type="submit">Join Class</button>
+    </form>
+    {% else %}
+    <p>No available classes to join.</p>
+    {% endif %}
 
-</body>
+    <h2>Your Classes</h2>
+
+    {% if enrolled_classes %}
+    <table border="1">
+      <tr>
+        <th>Class ID</th>
+        <th>Class Name</th>
+        <th>Description</th>
+        <th>Category</th>
+        <th>Attendance</th>
+        <th>Action</th>
+      </tr>
+
+      {% for class in enrolled_classes %}
+      <tr>
+        <td>{{ class[0] }}</td>
+        <td>{{ class[1] }}</td>
+        <td>{{ class[2] }}</td>
+        <td>{{ class[3] }}</td>
+
+        <td>
+          <button type="button" onclick="showAttendance('{{ class[0] }}')">
+            Show Attendance
+          </button>
+        </td>
+
+        <td>
+          <form
+            action="/student/{{ userid }}/leave/{{ class[0] }}"
+            method="POST"
+          >
+            <button type="submit">Leave Class</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}
+    <p>You are not enrolled in any classes yet.</p>
+    {% endif %}
+
+    <h2>Class Attendance</h2>
+
+    {% if enrolled_classes %} {% for class in enrolled_classes %}
+    <div
+      id="attendance-{{ class[0] }}"
+      class="attendance-section"
+      style="display: none"
+    >
+      <h3>{{ class[1] }} Attendance</h3>
+
+      <table border="1">
+        <tr>
+          <th>Date</th>
+          <th>Status</th>
+        </tr>
+
+        {% for record in attendance_records %} {% if record[0] == class[0] %}
+        <tr>
+          <td>{{ record[2] }}</td>
+          <td>{{ record[3] }}</td>
+        </tr>
+        {% endif %} {% endfor %}
+      </table>
+    </div>
+    {% endfor %} {% else %}
+    <p>No classes selected.</p>
+    {% endif %}
+
+    <br />
+
+    <a href="/">
+      <button type="button">Log Out</button>
+    </a>
+
+    <script>
+      function showAttendance(classid) {
+        const sections = document.querySelectorAll(".attendance-section");
+
+        sections.forEach((section) => {
+          section.style.display = "none";
+        });
+
+        const selected = document.getElementById("attendance-" + classid);
+
+        if (selected) {
+          selected.style.display = "block";
+        }
+      }
+    </script>
+  </body>
 </html>

@@ -65,7 +65,6 @@ def login():
 
     if result:
         userid = result[0]
-        firstname = result[1]
         usertype = result[2]
 
         if usertype == "student":
@@ -86,15 +85,95 @@ def student(userid):
         WHERE userid = %s
     """, (userid,))
 
-    result = cur.fetchone()
+    user = cur.fetchone()
+
+    if not user:
+        cur.close()
+        conn.close()
+        return redirect("/")
+
+    cur.execute("""
+        SELECT c.classid, c.classname, c.classdesc, c.category
+        FROM enrollment e
+        JOIN classes c ON e.classid = c.classid
+        WHERE e.userid = %s
+        ORDER BY c.classname
+    """, (userid,))
+
+    enrolled_classes = cur.fetchall()
+
+    cur.execute("""
+        SELECT classid, classname, classdesc, category
+        FROM classes
+        WHERE classid NOT IN (
+            SELECT classid
+            FROM enrollment
+            WHERE userid = %s
+        )
+        ORDER BY classname
+    """, (userid,))
+
+    available_classes = cur.fetchall()
+
+    cur.execute("""
+        SELECT ar.classid, c.classname, ar.meetdate, ar.attendance
+        FROM attendancerecord ar
+        JOIN classes c ON ar.classid = c.classid
+        WHERE ar.userid = %s
+        ORDER BY ar.meetdate DESC
+    """, (userid,))
+
+    attendance_records = cur.fetchall()
 
     cur.close()
     conn.close()
 
-    if result:
-        return render_template("student.html", name=result[0])
+    return render_template(
+        "student.html",
+        userid=userid,
+        name=user[0],
+        enrolled_classes=enrolled_classes,
+        available_classes=available_classes,
+        attendance_records=attendance_records
+    )
 
-    return redirect("/")
+
+@app.route("/student/<int:userid>/join", methods=["POST"])
+def join_class(userid):
+    classid = request.form["classid"]
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        INSERT INTO enrollment (userid, classid)
+        VALUES (%s, %s)
+        ON CONFLICT (userid, classid) DO NOTHING
+    """, (userid, classid))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return redirect(f"/student/{userid}")
+
+
+@app.route("/student/<int:userid>/leave/<int:classid>", methods=["POST"])
+def leave_class(userid, classid):
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        DELETE FROM enrollment
+        WHERE userid = %s AND classid = %s
+    """, (userid, classid))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return redirect(f"/student/{userid}")
+
 
 @app.route("/teacher/<int:userid>")
 def teacher(userid):
